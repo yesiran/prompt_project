@@ -1,0 +1,197 @@
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+*.sublime-workspace
+*.sublime-project
+
+# Dependencies
+node_modules/
+bower_components/
+vendor/
+.pnp
+.pnp.js
+
+# Build Output
+dist/
+build/
+out/
+target/
+*.dll
+*.so
+*.dylib
+*.exe
+*.out
+*.app
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+
+# Package Manager Files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+.coverage
+*.cover
+.hypothesis/
+.pytest_cache/
+cover/
+*.py,cover
+.tox/
+.nox/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.venv/
+venv/
+ENV/
+env/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+# C/C++
+*.o
+*.obj
+*.elf
+*.ko
+*.gch
+*.pch
+
+# Rust
+/target/
+Cargo.lock
+**/*.rs.bk
+
+# Go
+*.exe
+*.test
+*.prof
+go.sum
+
+# Ruby
+*.gem
+*.rbc
+.bundle/
+.config
+coverage/
+InstalledFiles
+lib/bundler/man/
+pkg/
+rdoc/
+spec/reports/
+test/tmp/
+test/version_tmp/
+tmp/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+
+# Temporary Files
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# Backup Files
+*.bak
+*.backup
+*~
+*.old
+
+# Compiled Source
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Certificates and Keys
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
