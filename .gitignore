@@ -8,6 +8,8 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
+prompt_project/
+
 # IDE and Editor Files
 .vscode/
 .idea/
