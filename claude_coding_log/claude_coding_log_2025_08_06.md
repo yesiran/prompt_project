@@ -380,3 +380,706 @@ redis==5.0.1              # 缓存支持
 **日志记录时间**: 2025-08-06  
 **下次更新**: 明日继续数据库相关模块开发  
 **当前状态**: 基础架构完成，公共模块60%进度
+
+---
+
+## 第二阶段：首页开发
+
+### 首页UI设计稿
+
+[用户提供的首页UI设计图]
+
+### 首页功能架构分析
+
+#### 整体布局结构
+```
+Dashboard
+├── 欢迎区域 (Welcome Section)
+├── 快速操作模板 (Quick Templates)
+├── 主内容区域 (Main Content Area)
+│   ├── 最近使用 Prompts (Recent Prompts) - 左侧2/3
+│   └── 右侧信息栏 (Sidebar Info) - 右侧1/3
+│       ├── 协作动态 (Activity Feed)
+│       └── API连接状态 (API Status)
+```
+
+---
+
+## 功能模块详细说明
+
+### 1. 欢迎区域 (Welcome Section)
+
+**功能作用**: 
+- 个性化问候，提升用户体验
+- 快速传达页面用途和当前状态
+
+**UI 技术参数**:
+```typescript
+// 容器
+className: "space-y-2"  // 垂直间距 8px
+
+// 标题
+tag: h1
+className: "text-2xl"   // 使用全局CSS变量 --text-2xl
+content: "早上好！👋"   // 动态时间问候 + emoji
+
+// 描述文本
+tag: p
+className: "text-muted-foreground"  // 使用主题变量
+content: "今天准备优化哪些 Prompt？"
+```
+
+**后端接口需求**:
+```typescript
+// GET /api/user/greeting
+interface GreetingResponse {
+  timeOfDay: 'morning' | 'afternoon' | 'evening'  // 根据时间动态问候
+  userName: string                                 // 用户名
+  todayTaskCount: number                          // 今日任务数
+  pendingPrompts: number                          // 待优化prompt数
+}
+```
+
+---
+
+### 2. 快速操作模板 (Quick Templates)
+
+**功能作用**:
+- 提供常用 Prompt 模板的快速访问
+- 降低新用户创建 Prompt 的学习成本
+- 引导用户探索不同应用场景
+
+**UI 技术参数**:
+```typescript
+// 网格容器
+className: "grid grid-cols-4 gap-4"  // 4列网格，间距16px
+
+// 单个模板卡片
+interface TemplateCard {
+  container: "Card"                          // shadcn/ui Card 组件
+  hover: "hover:shadow-md transition-shadow" // 悬停阴影效果
+  cursor: "cursor-pointer"                   // 鼠标指针
+  padding: "p-6"                            // 24px内边距
+  
+  // 图标容器
+  iconWrapper: {
+    className: "p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors"
+    size: "w-5 h-5"                         // 20x20px 图标
+  }
+  
+  // 文本内容
+  title: {
+    tag: "h3"
+    className: "font-medium"                 // 使用全局字重变量
+  }
+  description: {
+    tag: "p" 
+    className: "text-sm text-muted-foreground"
+  }
+}
+```
+
+**数据结构**:
+```typescript
+interface QuickTemplate {
+  id: string
+  icon: LucideIcon                    // Lucide React 图标组件
+  title: string                       // 模板标题
+  description: string                 // 模板描述
+  category: 'conversation' | 'content' | 'code' | 'ecommerce'
+  promptTemplate: string              // 预设 Prompt 模板内容
+  variables: string[]                 // 模板变量列表
+}
+```
+
+---
+
+### 3. 最近使用 Prompts (Recent Prompts)
+
+**功能作用**:
+- 快速访问用户最近编辑/测试的 Prompts
+- 显示关键信息帮助用户快速识别
+- 提供快速测试入口
+
+**UI 技术参数**:
+```typescript
+// 容器布局
+layout: {
+  span: "col-span-2"                  // 占据2/3宽度
+  grid: "grid grid-cols-2 gap-4"      // 2列网格布局
+}
+
+// 单个 Prompt 卡片
+interface PromptCard {
+  container: "Card"
+  hover: "hover:shadow-md transition-shadow group cursor-pointer"
+  
+  header: {
+    padding: "pb-3"                   // 底部内边距12px
+    layout: "flex items-start justify-between"
+  }
+  
+  title: {
+    className: "font-medium group-hover:text-primary transition-colors"
+    maxLength: 30                     // 标题最大长度
+  }
+  
+  metadata: {
+    categoryDot: "w-2 h-2 rounded-full"  // 2x2px 分类色点
+    categoryText: "text-xs text-muted-foreground"
+    versionBadge: "Badge variant='outline' text-xs"
+  }
+  
+  content: {
+    preview: "text-sm text-muted-foreground line-clamp-2 mb-4"  // 2行截断
+    maxPreviewLength: 100             // 预览文本最大长度
+  }
+  
+  footer: {
+    layout: "flex items-center justify-between"
+    timestamp: "flex items-center gap-1 text-xs"
+    score: "flex items-center gap-1 text-xs"
+    testButton: "h-8 px-3 Button size='sm' variant='ghost'"
+  }
+}
+```
+
+---
+
+### 4. 协作动态 (Activity Feed)
+
+**功能作用**:
+- 实时显示团队成员的操作动态
+- 促进团队协作和知识共享
+- 帮助用户了解项目进度
+
+**UI 技术参数**:
+```typescript
+// 容器
+container: {
+  className: "space-y-4"              // 垂直间距16px
+  layout: "Card > CardContent"
+  padding: "p-6 space-y-4"           // 24px内边距，子元素间距16px
+}
+
+// 单条动态
+interface ActivityItem {
+  layout: "flex items-center gap-3"   // 水平布局，间距12px
+  
+  avatar: {
+    component: "Avatar"
+    size: "w-8 h-8"                   // 32x32px
+    fallback: "text-xs"               // 小号文字
+  }
+  
+  content: {
+    layout: "flex-1 space-y-1"        // 占据剩余空间，垂直间距4px
+    
+    message: {
+      tag: "p"
+      className: "text-sm"            // 14px 字体
+      userNameStyle: "font-medium"    // 用户名加粗
+      actionStyle: "text-muted-foreground"  // 操作文字弱化
+      targetStyle: "font-medium"      // 目标对象加粗
+    }
+    
+    timestamp: {
+      tag: "p"
+      className: "text-xs text-muted-foreground"  // 12px 弱化文字
+    }
+  }
+}
+```
+
+---
+
+### 5. API 连接状态 (API Status)
+
+**功能作用**:
+- 实时显示各 AI 平台的连接状态
+- 帮助用户诊断和解决连接问题
+- 快速访问 API 配置设置
+
+**UI 技术参数**:
+```typescript
+// 容器
+container: {
+  component: "Card"
+  header: "CardHeader"
+  content: "CardContent space-y-3"    // 子元素间距12px
+}
+
+// 单个API状态项
+interface APIStatusItem {
+  layout: "flex items-center justify-between"
+  
+  leftSection: {
+    layout: "flex items-center gap-2"  // 间距8px
+    
+    statusDot: {
+      size: "w-2 h-2"                 // 2x2px
+      shape: "rounded-full"
+      colors: {
+        connected: "bg-green-500"     // 绿色表示连接
+        disconnected: "bg-red-500"    // 红色表示断开
+        warning: "bg-yellow-500"      // 黄色表示警告
+      }
+    }
+    
+    apiName: {
+      tag: "span"
+      className: "text-sm"            // 14px字体
+    }
+  }
+  
+  rightSection: {
+    component: "Badge"
+    variants: {
+      connected: "variant='secondary'"
+      disconnected: "variant='destructive'"
+      warning: "variant='outline'"
+    }
+  }
+}
+```
+
+---
+
+## 页面级状态管理
+
+### Context State
+```typescript
+// 来自 AppContext
+interface DashboardState {
+  currentPage: 'dashboard'            // 当前页面标识
+  prompts: PromptData[]              // 全局Prompt数据
+  currentPrompt: PromptData | null   // 当前选中的Prompt
+  
+  // Dashboard特有状态
+  recentPrompts: PromptData[]        // 最近使用的Prompts
+  quickTemplates: QuickTemplate[]    // 快速模板
+  activities: ActivityItem[]         // 协作动态
+  apiStatuses: APIStatus[]          // API状态
+}
+```
+
+---
+
+## 性能优化策略
+
+### 1. 数据加载
+- **首屏加载**: 优先加载欢迎信息和快速模板
+- **懒加载**: 最近使用的Prompts和动态信息延迟加载
+- **缓存策略**: 模板数据和API状态信息本地缓存
+
+### 2. 组件优化
+- **React.memo**: 包装纯UI组件避免不必要渲染
+- **虚拟滚动**: 协作动态列表支持大量数据
+- **防抖处理**: API状态检查请求防抖
+
+### 3. 用户体验
+- **骨架屏**: 数据加载时显示骨架占位
+- **乐观更新**: 操作后立即更新UI，后台同步
+- **错误边界**: 组件级错误处理
+
+---
+
+## 响应式设计规范
+
+### 断点适配
+```typescript
+// Tailwind 断点
+const breakpoints = {
+  sm: '640px',    // 手机横屏
+  md: '768px',    // 平板
+  lg: '1024px',   // 笔记本
+  xl: '1280px',   // 桌面
+  '2xl': '1536px' // 大屏
+}
+
+// 布局适配
+const responsiveLayout = {
+  // 快速模板网格
+  templates: {
+    default: 'grid-cols-4',         // 桌面4列
+    lg: 'lg:grid-cols-4',          // 大屏保持4列
+    md: 'md:grid-cols-2',          // 平板2列
+    sm: 'sm:grid-cols-1'           // 手机1列
+  },
+  
+  // 主内容区域
+  mainContent: {
+    default: 'grid-cols-3',        // 桌面3列（2+1）
+    lg: 'lg:grid-cols-3',          
+    md: 'md:grid-cols-1',          // 平板单列堆叠
+    sm: 'sm:grid-cols-1'
+  },
+  
+  // 最近使用网格
+  recentPrompts: {
+    default: 'grid-cols-2',        // 桌面2列
+    lg: 'lg:grid-cols-2',
+    md: 'md:grid-cols-1',          // 平板单列
+    sm: 'sm:grid-cols-1'
+  }
+}
+```
+
+---
+
+## 测试策略
+
+### 单元测试
+```typescript
+// Dashboard.test.tsx
+describe('Dashboard Component', () => {
+  test('renders welcome message based on time', () => {})
+  test('displays quick templates correctly', () => {})
+  test('handles template click navigation', () => {})
+  test('shows recent prompts with correct data', () => {})
+  test('displays activity feed', () => {})
+  test('shows API status indicators', () => {})
+})
+```
+
+---
+
+## 开发实施计划
+
+### 第一步：创建首页HTML模板 ✅
+- 基础布局结构
+- 欢迎区域
+- 快速模板网格
+- 最近使用卡片
+- 右侧信息栏
+
+### 第二步：CSS样式实现
+- 全局样式变量
+- 卡片组件样式
+- 悬停效果和动画
+- 响应式布局
+
+### 第三步：JavaScript交互
+- 动态时间问候
+- 模板点击事件
+- API状态检查
+- 实时动态更新
+
+### 第四步：后端API实现
+- 首页数据聚合接口
+- 模板数据接口
+- 活动动态接口
+- API状态检查接口
+
+---
+
+**日志记录时间**: 2025-08-06  
+**更新内容**: 添加首页UI设计稿和详细开发文档  
+**当前状态**: 开始首页前端开发阶段
+
+---
+
+## 第三阶段：首页开发完成
+
+### 开发进度总结
+
+**完成时间**: 2025-08-06 20:15  
+**开发内容**: 首页完整实现（前端+后端）
+
+### 已完成的功能模块
+
+#### 1. ✅ 前端实现
+
+##### HTML模板 (app/templates/)
+- **base.html** - 基础模板，包含：
+  - 完整的侧边栏导航系统
+  - 顶部导航栏（搜索框、通知、设置、用户头像）
+  - 主要功能菜单：工作台、编辑器、知识库、协作空间、设置中心
+  - 快速访问：收藏夹、最近使用
+  - 我的项目：营销文案、客服对话、产品描述、代码注释
+
+- **dashboard.html** - 首页模板，包含：
+  - 欢迎区域（动态时间问候）
+  - 快速操作模板（4个分类：对话助手、内容创作、代码助手、电商运营）
+  - 最近使用Prompts（2x2网格布局，包含标题、分类、版本、评分、测试按钮）
+  - 协作动态（显示团队成员操作记录）
+  - API连接状态（OpenAI GPT-4、Claude 3、文心一言）
+
+##### CSS样式 (app/static/css/)
+- **main.css** - 全局样式
+  - CSS变量系统（颜色、间距、字体、圆角、阴影）
+  - 基础样式重置
+  - 主布局结构（侧边栏宽度240px，顶部高度64px）
+  - 通用组件样式（卡片、按钮、徽章）
+  - 响应式断点设计
+  - 自定义滚动条样式
+
+- **dashboard.css** - 首页专属样式
+  - 欢迎区域样式（包含wave动画）
+  - 快速模板卡片（4列网格，悬停效果）
+  - Prompt卡片样式（分类色点、版本徽章、评分显示）
+  - 协作动态列表样式
+  - API状态指示器（连接/断开状态）
+  - 响应式适配（平板/手机断点）
+
+##### JavaScript交互 (app/static/js/)
+- **app.js** - 全局交互
+  - 侧边栏导航高亮
+  - 搜索功能（防抖处理）
+  - 用户菜单交互
+  - 通知功能框架
+  - 工具函数（formatTime、showToast）
+
+- **dashboard.js** - 首页交互
+  - 动态时间问候（根据时间显示不同问候语）
+  - 快速模板点击处理
+  - Prompt卡片交互（点击进入编辑、测试按钮功能）
+  - API状态实时检查
+  - 自动刷新机制（时间更新、API状态检查）
+
+#### 2. ✅ 后端实现
+
+##### 路由层 (app/routes/)
+- **dashboard.py** - 首页路由
+  - `GET /` - 渲染首页视图
+  - `GET /dashboard` - 首页别名路由
+  - `GET /api/dashboard/data` - 获取首页聚合数据
+  - `GET /api/user/greeting` - 获取个性化问候语
+  - `GET /api/templates/quick` - 获取快速模板列表
+  - `GET /api/prompts/recent` - 获取最近使用的Prompts
+  - `GET /api/activities/feed` - 获取协作动态
+  - `GET /api/integrations/status` - 获取API连接状态
+  - `POST /api/integrations/<api_id>/test` - 测试API连接
+
+##### 服务层 (app/services/)
+- **dashboard_service.py** - 业务逻辑处理
+  - `get_dashboard_data()` - 聚合首页所有数据
+  - `get_user_greeting_data()` - 获取用户问候信息
+  - `get_quick_templates()` - 返回4个快速模板数据
+  - `get_recent_prompts()` - 返回最近使用的Prompts（支持分页和过滤）
+  - `get_activity_feed()` - 返回协作动态（支持分页）
+  - `check_api_status()` - 检查各AI平台连接状态
+  - `test_api_connection()` - 测试指定API连接
+
+##### 应用初始化 (app/)
+- **__init__.py** - Flask应用工厂
+  - 创建Flask应用实例
+  - 加载环境配置（development/production）
+  - 注册路由蓝图
+  - 注册错误处理器（404、500）
+  - 注册模板过滤器
+
+- **run.py** - 应用启动脚本
+  - 支持环境变量配置（ENV、FLASK_PORT、FLASK_HOST）
+  - 开发环境自动开启调试模式
+  - 生产环境提示使用WSGI服务器
+
+#### 3. ✅ 静态资源
+- **images/default-avatar.svg** - 默认用户头像
+
+### 技术特点
+
+1. **像素级UI还原**
+   - 严格按照设计稿实现所有视觉元素
+   - 精确的间距、颜色、字体大小
+   - 完整的悬停效果和过渡动画
+
+2. **模块化架构**
+   - 清晰的MVC分层（Models-Views-Controllers）
+   - 服务层独立处理业务逻辑
+   - 路由层只负责请求响应
+
+3. **响应式设计**
+   - 支持桌面、平板、手机多端适配
+   - 灵活的网格布局系统
+   - 断点优化的组件显示
+
+4. **可扩展性**
+   - 预留了数据库连接接口
+   - 模拟数据便于后续替换
+   - 清晰的代码注释和文档
+
+### 测试信息
+
+**应用访问地址**: http://localhost:5001  
+**运行命令**: 
+```bash
+source prompt_project/bin/activate
+FLASK_PORT=5001 python run.py
+```
+
+**测试要点**:
+1. 首页能否正常加载
+2. 侧边栏导航是否正常
+3. 欢迎语是否根据时间变化
+4. 快速模板卡片悬停效果
+5. 最近使用Prompts显示
+6. 协作动态列表显示
+7. API状态指示器显示
+8. 响应式布局是否正常
+
+### 待优化项
+
+1. **数据层实现**
+   - 目前使用模拟数据，需要连接真实数据库
+   - 实现用户认证系统
+   - 实现Prompt的CRUD操作
+
+2. **功能完善**
+   - 搜索功能的实际实现
+   - WebSocket实时更新协作动态
+   - API配置界面
+   - 模板创建和编辑功能
+
+3. **性能优化**
+   - 添加页面缓存
+   - 图片懒加载
+   - 资源压缩和合并
+
+---
+
+**日志记录时间**: 2025-08-06 20:15  
+**更新内容**: 完成首页完整开发（HTML/CSS/JS/Flask路由/服务层）  
+**当前状态**: 首页开发完成，等待测试反馈
+
+---
+
+## 错误修复与优化记录
+
+**日志记录时间**: 2025-08-06 20:30  
+**任务**: 修复404错误和环境变量配置问题
+
+### 问题发现与分析
+
+#### 1. **404错误导致的连锁问题**
+
+**错误现象**:
+- 浏览器请求 `/favicon.ico` 时触发404错误
+- 404错误处理器尝试渲染 `404.html` 模板
+- 模板文件不存在导致 `TemplateNotFound` 异常
+- 最终显示500内部服务器错误
+
+**错误日志分析**:
+```
+werkzeug.exceptions.NotFound: 404 Not Found
+jinja2.exceptions.TemplateNotFound: 404.html
+```
+
+**根本原因**:
+- 缺少404和500错误页面模板
+- 没有配置favicon图标路由
+- 错误处理器引用了不存在的模板文件
+
+#### 2. **环境变量配置不一致**
+
+**发现的问题**:
+- `run.py` 使用 `FLASK_PORT` 和 `FLASK_HOST`
+- `.env.template` 中没有这两个变量定义
+- `.env.template` 有 `FLASK_APP=run.py` 但代码中未使用
+- 存在 `APP_HOST/APP_PORT` 和 `FLASK_HOST/FLASK_PORT` 的混淆
+
+### 解决方案实施
+
+#### 1. **创建"Prompt the World"主题图标**
+
+**文件**: `/app/static/favicon.svg`
+
+**设计理念**:
+- 紫蓝渐变背景，体现技术创新
+- 中心终端符号，代表Prompt概念
+- 世界地图元素，象征全球连接
+- 动态光标闪烁效果
+- 连接线动画表示信息流动
+
+**技术特点**:
+- SVG矢量格式，支持缩放
+- 内置CSS动画效果
+- 现代浏览器兼容性好
+
+#### 2. **创建错误页面模板**
+
+**404错误页面** (`/app/templates/404.html`):
+- 紫色渐变背景与主题一致
+- "prompt find_page" 创意文案
+- 浮动形状动画效果
+- 友好的导航按钮
+
+**500错误页面** (`/app/templates/500.html`):
+- 红色调表示错误状态
+- 齿轮旋转动画暗示修复中
+- 模拟终端输出效果
+- 状态指示器脉冲动画
+
+#### 3. **配置favicon路由**
+
+**修改文件**: `/app/__init__.py`
+
+```python
+@app.route('/favicon.ico')
+def favicon():
+    """提供favicon图标"""
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.svg',
+        mimetype='image/svg+xml'
+    )
+```
+
+#### 4. **环境变量清理和统一**
+
+**修改文件**: `.env.template`
+
+**删除的变量**:
+- `FLASK_APP=run.py` (未使用)
+
+**添加的变量**:
+```
+FLASK_HOST=127.0.0.1  # Flask开发服务器主机
+FLASK_PORT=5001       # Flask开发服务器端口
+```
+
+**保留的变量说明**:
+- `APP_HOST/APP_PORT`: 用于生产环境部署（Gunicorn等）
+- `FLASK_HOST/FLASK_PORT`: 用于开发环境（Flask内置服务器）
+
+### 技术细节记录
+
+#### SVG动画实现
+- 使用 `<animate>` 标签创建动画
+- `attributeName="opacity"` 控制透明度变化
+- `dur` 设置动画持续时间
+- `repeatCount="indefinite"` 无限循环
+
+#### 错误页面设计要点
+- 使用CSS动画提升用户体验
+- `backdrop-filter: blur()` 创建毛玻璃效果
+- `@keyframes` 定义复杂动画序列
+- 响应式设计适配移动端
+
+#### 环境变量最佳实践
+- 开发和生产环境变量分离
+- 提供合理的默认值
+- 添加清晰的注释说明
+- 避免硬编码配置值
+
+### 验证与测试
+
+**测试点**:
+1. ✅ favicon图标是否正常显示
+2. ✅ 404页面是否正确渲染
+3. ✅ 500页面是否正确渲染
+4. ✅ 环境变量是否正确读取
+5. ✅ 不再出现TemplateNotFound错误
+
+### 收获与总结
+
+1. **错误处理的重要性**: 完善的错误处理能提升用户体验
+2. **配置管理规范化**: 环境变量需要统一管理和文档化
+3. **视觉设计的价值**: 精心设计的错误页面能缓解用户焦虑
+4. **SVG图标的优势**: 矢量图标在各种分辨率下都保持清晰
+
+---
+
+**日志记录时间**: 2025-08-06 20:35  
+**更新内容**: 完成错误页面创建、favicon配置、环境变量清理  
+**当前状态**: 系统错误处理机制完善，配置规范化完成

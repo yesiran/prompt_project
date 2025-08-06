@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Prompt the World{% endblock %}</title>
+    
+    <!-- 基础样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    <!-- 页面专属样式 -->
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">P</span>
+                    <span class="logo-text">Prompt the World</span>
+                </div>
+            </div>
+            
+            <!-- 新建Prompt按钮 -->
+            <div class="sidebar-action">
+                <button class="btn-new-prompt">
+                    <svg class="icon-plus" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 2V14M2 8H14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>新建 Prompt</span>
+                </button>
+            </div>
+            
+            <!-- 主要功能区 -->
+            <nav class="sidebar-nav main-nav">
+                <div class="nav-section-title">主要功能</div>
+                <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <rect x="3" y="3" width="6" height="6" stroke="currentColor" stroke-width="1.5"/>
+                        <rect x="11" y="3" width="6" height="6" stroke="currentColor" stroke-width="1.5"/>
+                        <rect x="3" y="11" width="6" height="6" stroke="currentColor" stroke-width="1.5"/>
+                        <rect x="11" y="11" width="6" height="6" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                    <span>工作台</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M3 5H17M5 5V15C5 16.1046 5.89543 17 7 17H13C14.1046 17 15 16.1046 15 15V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M8 9V13M12 9V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>编辑器</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M9 3H4C3.44772 3 3 3.44772 3 4V16C3 16.5523 3.44772 17 4 17H16C16.5523 17 17 16.5523 17 16V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M15 2L18 5L10 13H7V10L15 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>知识库</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 4V10H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                    <span>协作空间</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10.5 2L11.5 5.5L15 6L12.5 8.5L13.5 12L10.5 10L7.5 12L8.5 8.5L6 6L9.5 5.5L10.5 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                    </svg>
+                    <span>设置中心</span>
+                    <span class="nav-badge">12</span>
+                </a>
+            </nav>
+            
+            <!-- 快速访问 -->
+            <nav class="sidebar-nav quick-nav">
+                <div class="nav-section-title">快速访问</div>
+                <a href="#" class="nav-item">
+                    <span class="nav-item-content">
+                        <span class="status-dot status-red"></span>
+                        <span>收藏夹</span>
+                    </span>
+                    <span class="nav-count">8</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-item-content">
+                        <span class="status-dot status-orange"></span>
+                        <span>最近使用</span>
+                    </span>
+                </a>
+            </nav>
+            
+            <!-- 我的项目 -->
+            <nav class="sidebar-nav project-nav">
+                <div class="nav-section-title">我的项目</div>
+                <a href="#" class="nav-item">
+                    <span class="status-dot status-red"></span>
+                    <span>营销文案</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="status-dot status-orange"></span>
+                    <span>客服对话</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="status-dot status-red"></span>
+                    <span>产品描述</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="status-dot status-red"></span>
+                    <span>代码注释</span>
+                </a>
+            </nav>
+        </aside>
+        
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 顶部导航栏 -->
+            <header class="header">
+                <div class="header-left">
+                    <!-- 搜索框 -->
+                    <div class="search-box">
+                        <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M13 13L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        <input type="text" placeholder="搜索 Prompts..." class="search-input">
+                    </div>
+                </div>
+                
+                <div class="header-right">
+                    <!-- 通知图标 -->
+                    <button class="header-icon-btn">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M10 2C11.1046 2 12 2.89543 12 4V5C14.2091 5 16 6.79086 16 9V13L18 15V16H2V15L4 13V9C4 6.79086 5.79086 5 8 5V4C8 2.89543 8.89543 2 10 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                            <path d="M8 16V17C8 18.1046 8.89543 19 10 19C11.1046 19 12 18.1046 12 17V16" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- 设置图标 -->
+                    <button class="header-icon-btn">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="10" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M10 4V2M10 18V16M16 10H18M2 10H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <path d="M14.142 5.858L15.556 4.444M4.444 15.556L5.858 14.142M14.142 14.142L15.556 15.556M4.444 4.444L5.858 5.858" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- 用户头像 -->
+                    <div class="user-avatar">
+                        <img src="{{ url_for('static', filename='images/default-avatar.svg') }}" alt="用户头像">
+                    </div>
+                </div>
+            </header>
+            
+            <!-- 页面内容 -->
+            <div class="page-content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    
+    <!-- 基础脚本 -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    
+    <!-- 页面专属脚本 -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

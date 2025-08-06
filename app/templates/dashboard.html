@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}工作台 - Prompt the World{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- 欢迎区域 -->
+    <section class="welcome-section">
+        <h1 class="welcome-title">
+            <span id="greeting">早上好！</span>
+            <span class="wave-emoji">👋</span>
+        </h1>
+        <p class="welcome-subtitle">今天准备优化哪些 Prompt？</p>
+    </section>
+    
+    <!-- 快速操作模板区域 -->
+    <section class="quick-templates-section">
+        <div class="template-grid">
+            <!-- 对话助手模板 -->
+            <div class="template-card" data-template="conversation">
+                <div class="template-icon-wrapper">
+                    <svg class="template-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M8 12H8.01M12 12H12.01M16 12H16.01M21 12C21 16.9706 16.9706 21 12 21C10.4607 21 9.01172 20.6065 7.74467 19.9065L3 21L4.39499 16.5914C3.51156 15.2415 3 13.6733 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h3 class="template-title">对话助手</h3>
+                <p class="template-description">智能客服和聊天机器人</p>
+            </div>
+            
+            <!-- 内容创作模板 -->
+            <div class="template-card" data-template="content">
+                <div class="template-icon-wrapper">
+                    <svg class="template-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L14.09 8.26L21 9.27L16.5 13.97L17.82 21L12 17.27L6.18 21L7.5 13.97L3 9.27L9.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h3 class="template-title">内容创作</h3>
+                <p class="template-description">文章、博客和营销文案</p>
+            </div>
+            
+            <!-- 代码助手模板 -->
+            <div class="template-card" data-template="code">
+                <div class="template-icon-wrapper">
+                    <svg class="template-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M16 18L22 12L16 6M8 6L2 12L8 18M14 4L10 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h3 class="template-title">代码助手</h3>
+                <p class="template-description">代码生成和文档编写</p>
+            </div>
+            
+            <!-- 电商运营模板 -->
+            <div class="template-card" data-template="ecommerce">
+                <div class="template-icon-wrapper">
+                    <svg class="template-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 2L6 9H18L15 2M3 9H21L19 21H5L3 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h3 class="template-title">电商运营</h3>
+                <p class="template-description">商品描述和营销素材</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 主内容区域 -->
+    <div class="main-content-grid">
+        <!-- 左侧：最近使用 -->
+        <section class="recent-prompts-section">
+            <div class="section-header">
+                <h2 class="section-title">最近使用</h2>
+                <a href="#" class="view-all-link">查看全部</a>
+            </div>
+            
+            <div class="prompts-grid">
+                <!-- Prompt卡片1：产品文案生成器 -->
+                <div class="prompt-card" data-prompt-id="1">
+                    <div class="prompt-header">
+                        <div class="prompt-title-group">
+                            <h3 class="prompt-title">产品文案生成器</h3>
+                            <div class="prompt-meta">
+                                <span class="category-dot category-orange"></span>
+                                <span class="category-text">营销文案</span>
+                                <span class="version-badge">v1.3</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="prompt-preview">
+                        请为我的{{产品名称}}生成一段吸引人的营销文案。重点突出{{核心卖点}}，文案风格：1. 简洁有力 2. 控制在100字以内...
+                    </p>
+                    
+                    <div class="prompt-footer">
+                        <div class="prompt-time">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M8 4V8L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <span>2小时前</span>
+                        </div>
+                        <div class="prompt-actions">
+                            <span class="prompt-score">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 2L9.5 5.5L13 6L10.5 8.5L11.5 12L8 10L4.5 12L5.5 8.5L3 6L6.5 5.5L8 2Z" fill="currentColor"/>
+                                </svg>
+                                <span>4.8</span>
+                            </span>
+                            <button class="btn-test">测试</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Prompt卡片2：API文档生成 -->
+                <div class="prompt-card" data-prompt-id="2">
+                    <div class="prompt-header">
+                        <div class="prompt-title-group">
+                            <h3 class="prompt-title">API文档生成</h3>
+                            <div class="prompt-meta">
+                                <span class="category-dot category-blue"></span>
+                                <span class="category-text">代码注释</span>
+                                <span class="version-badge">v2.1</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="prompt-preview">
+                        根据下面数据库表结构详细的API文档：{{函数签名}} 请包含：1. 函数描述和用途 2. 参数说明（类型、是否必需、默认值）...
+                    </p>
+                    
+                    <div class="prompt-footer">
+                        <div class="prompt-time">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M8 4V8L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <span>1天前</span>
+                        </div>
+                        <div class="prompt-actions">
+                            <span class="prompt-score">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 2L9.5 5.5L13 6L10.5 8.5L11.5 12L8 10L4.5 12L5.5 8.5L3 6L6.5 5.5L8 2Z" fill="currentColor"/>
+                                </svg>
+                                <span>4.5</span>
+                            </span>
+                            <button class="btn-test">测试</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 添加更多Prompt卡片示例 -->
+                <div class="prompt-card" data-prompt-id="3">
+                    <div class="prompt-header">
+                        <div class="prompt-title-group">
+                            <h3 class="prompt-title">客服回复模板</h3>
+                            <div class="prompt-meta">
+                                <span class="category-dot category-green"></span>
+                                <span class="category-text">客服对话</span>
+                                <span class="version-badge">v1.8</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="prompt-preview">
+                        作为专业的客服人员，请根据客户问题：{{问题内容}}，提供礼貌、专业的回复。要求：1. 态度友好 2. 解决方案清晰...
+                    </p>
+                    
+                    <div class="prompt-footer">
+                        <div class="prompt-time">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M8 4V8L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <span>3天前</span>
+                        </div>
+                        <div class="prompt-actions">
+                            <span class="prompt-score">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 2L9.5 5.5L13 6L10.5 8.5L11.5 12L8 10L4.5 12L5.5 8.5L3 6L6.5 5.5L8 2Z" fill="currentColor"/>
+                                </svg>
+                                <span>4.9</span>
+                            </span>
+                            <button class="btn-test">测试</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="prompt-card" data-prompt-id="4">
+                    <div class="prompt-header">
+                        <div class="prompt-title-group">
+                            <h3 class="prompt-title">SEO文章优化</h3>
+                            <div class="prompt-meta">
+                                <span class="category-dot category-purple"></span>
+                                <span class="category-text">内容创作</span>
+                                <span class="version-badge">v2.0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="prompt-preview">
+                        优化以下文章以提高SEO排名：{{文章内容}}。请关注：1. 关键词密度 2. 标题优化 3. 元描述生成...
+                    </p>
+                    
+                    <div class="prompt-footer">
+                        <div class="prompt-time">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M8 4V8L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <span>1周前</span>
+                        </div>
+                        <div class="prompt-actions">
+                            <span class="prompt-score">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 2L9.5 5.5L13 6L10.5 8.5L11.5 12L8 10L4.5 12L5.5 8.5L3 6L6.5 5.5L8 2Z" fill="currentColor"/>
+                                </svg>
+                                <span>4.7</span>
+                            </span>
+                            <button class="btn-test">测试</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 右侧：协作动态和API状态 -->
+        <aside class="dashboard-sidebar">
+            <!-- 协作动态 -->
+            <section class="activity-section">
+                <h3 class="sidebar-section-title">协作动态</h3>
+                
+                <div class="activity-list">
+                    <!-- 动态条目1 -->
+                    <div class="activity-item">
+                        <div class="activity-avatar">
+                            <span class="avatar-text">Y</span>
+                        </div>
+                        <div class="activity-content">
+                            <p class="activity-message">
+                                <span class="user-name">你</span>
+                                <span class="action-text">测试了</span>
+                                <span class="target-name">产品文案生成器 v1.3</span>
+                            </p>
+                            <p class="activity-time">2小时前</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 动态条目2 -->
+                    <div class="activity-item">
+                        <div class="activity-avatar">
+                            <span class="avatar-text">L</span>
+                        </div>
+                        <div class="activity-content">
+                            <p class="activity-message">
+                                <span class="user-name">李小明</span>
+                                <span class="action-text">分享了</span>
+                                <span class="target-name">GPT-4提示词优化技巧</span>
+                            </p>
+                            <p class="activity-time">4小时前</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 动态条目3 -->
+                    <div class="activity-item">
+                        <div class="activity-avatar">
+                            <span class="avatar-text">Y</span>
+                        </div>
+                        <div class="activity-content">
+                            <p class="activity-message">
+                                <span class="user-name">你</span>
+                                <span class="action-text">创建了</span>
+                                <span class="target-name">API文档生成器</span>
+                            </p>
+                            <p class="activity-time">昨天</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 动态条目4 -->
+                    <div class="activity-item">
+                        <div class="activity-avatar">
+                            <span class="avatar-text">L</span>
+                        </div>
+                        <div class="activity-content">
+                            <p class="activity-message">
+                                <span class="user-name">李小明</span>
+                                <span class="action-text">优化了</span>
+                                <span class="target-name">客服回复模板</span>
+                            </p>
+                            <p class="activity-time">2天前</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- API连接状态 -->
+            <section class="api-status-section">
+                <h3 class="sidebar-section-title">API 连接状态</h3>
+                
+                <div class="api-status-list">
+                    <!-- OpenAI GPT-4 -->
+                    <div class="api-status-item">
+                        <div class="api-info">
+                            <span class="status-dot status-green"></span>
+                            <span class="api-name">OpenAI GPT-4</span>
+                        </div>
+                        <span class="status-badge status-connected">已连接</span>
+                    </div>
+                    
+                    <!-- Claude 3 -->
+                    <div class="api-status-item">
+                        <div class="api-info">
+                            <span class="status-dot status-green"></span>
+                            <span class="api-name">Claude 3</span>
+                        </div>
+                        <span class="status-badge status-connected">已连接</span>
+                    </div>
+                    
+                    <!-- 文心一言 -->
+                    <div class="api-status-item">
+                        <div class="api-info">
+                            <span class="status-dot status-red"></span>
+                            <span class="api-name">文心一言</span>
+                        </div>
+                        <span class="status-badge status-disconnected">未连接</span>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
