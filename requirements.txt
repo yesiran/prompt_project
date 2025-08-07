@@ -6,6 +6,8 @@ Werkzeug==3.0.1
 PyMySQL==1.1.0
 SQLAlchemy==2.0.23
 alembic==1.13.0
+DBUtils==3.0.3
+cryptography>=45.0.0  # MySQL SHA2认证支持
 
 # 环境配置
 python-dotenv==1.0.0

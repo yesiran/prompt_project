@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ prompt.title if prompt else '新建Prompt' }} - Prompt编辑器</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/prompt_editor.css') }}">
+    
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <!-- 顶部导航栏 -->
+    <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+        <div class="h-full px-6 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="/" class="text-2xl font-bold text-gray-900 flex items-center">
+                    <span class="mr-2">P</span>
+                    <span class="text-sm font-normal text-gray-500">Prompt the World</span>
+                </a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="text-gray-600 hover:text-gray-900">
+                    <i class="fas fa-bell"></i>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-gray-300"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="pt-16 h-screen flex">
+        <!-- 左侧编辑区域 -->
+        <div class="flex-1 flex flex-col bg-white">
+            <!-- 顶部工具栏 -->
+            <div class="border-b border-gray-200 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <input type="text" 
+                               id="promptTitle"
+                               class="text-lg font-medium border-none p-0 bg-transparent focus:outline-none focus:ring-0"
+                               placeholder="Prompt 标题"
+                               value="{{ prompt.title if prompt else '' }}"
+                               maxlength="100">
+                        <span class="px-2 py-1 text-xs border border-gray-300 rounded text-gray-600">
+                            {{ prompt.current_version.version if prompt and prompt.current_version else 'v1.0' }}
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded" 
+                                title="查看版本历史"
+                                onclick="showVersionHistory()">
+                            <i class="fas fa-history"></i>
+                        </button>
+                        <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                                title="分享Prompt"
+                                onclick="sharePrompt()">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                        <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
+                                onclick="savePrompt()">
+                            <i class="fas fa-save mr-2"></i>
+                            保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 元信息栏 -->
+            <div class="border-b border-gray-200 px-6 py-3">
+                <div class="flex items-center space-x-4 flex-wrap">
+                    <!-- 分类选择 -->
+                    <select id="promptCategory" 
+                            class="w-40 px-3 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">选择分类</option>
+                        <option value="marketing" {{ 'selected' if prompt and prompt.category == 'marketing' else '' }}>营销文案</option>
+                        <option value="customer-service" {{ 'selected' if prompt and prompt.category == 'customer-service' else '' }}>客服对话</option>
+                        <option value="product" {{ 'selected' if prompt and prompt.category == 'product' else '' }}>产品描述</option>
+                        <option value="code" {{ 'selected' if prompt and prompt.category == 'code' else '' }}>代码注释</option>
+                        <option value="creative" {{ 'selected' if prompt and prompt.category == 'creative' else '' }}>创意写作</option>
+                        <option value="analysis" {{ 'selected' if prompt and prompt.category == 'analysis' else '' }}>数据分析</option>
+                    </select>
+
+                    <!-- 标签管理 -->
+                    <div class="flex items-center space-x-2 flex-wrap">
+                        <div id="tagList" class="flex items-center space-x-2">
+                            {% if prompt and prompt.tags %}
+                                {% for tag in prompt.tags %}
+                                <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm cursor-pointer hover:bg-gray-200"
+                                      onclick="removeTag('{{ tag }}')">
+                                    {{ tag }}
+                                    <i class="fas fa-times ml-1 text-xs"></i>
+                                </span>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center">
+                            <input type="text" 
+                                   id="newTagInput"
+                                   class="w-24 h-7 px-2 border border-gray-300 rounded-l text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="添加标签"
+                                   maxlength="20"
+                                   onkeypress="if(event.key === 'Enter') addTag()">
+                            <button class="h-7 px-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r hover:bg-gray-200"
+                                    onclick="addTag()">
+                                <i class="fas fa-tag text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主编辑器 -->
+            <div class="flex-1 px-6 py-4 overflow-y-auto">
+                <div class="bg-white rounded-lg">
+                    <textarea id="promptContent" 
+                              class="w-full min-h-[400px] p-4 resize-none border-none focus:outline-none focus:ring-0 font-mono text-sm"
+                              placeholder="在这里编写你的 Prompt...">{{ prompt.current_version.content if prompt and prompt.current_version else '' }}</textarea>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 右侧测试面板 -->
+        <div class="w-96 border-l border-gray-200 bg-white flex flex-col">
+            <!-- 面板标题 -->
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="font-medium">测试面板</h3>
+                <button class="text-gray-600 hover:text-gray-900" title="高级设置">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+
+            <!-- API配置 -->
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">API 配置</label>
+                        <select id="modelProvider" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="openai/gpt-4">OpenAI GPT-4</option>
+                            <option value="openai/gpt-3.5-turbo">OpenAI GPT-3.5 Turbo</option>
+                            <option value="claude/claude-3">Anthropic Claude 3</option>
+                            <option value="wenxin/ernie-bot-4">百度文心一言</option>
+                        </select>
+                    </div>
+
+                    <!-- 参数控制 -->
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1">
+                            Temperature: <span id="temperatureValue">0.7</span>
+                        </label>
+                        <input type="range" 
+                               id="temperatureSlider"
+                               min="0" max="1" step="0.1" value="0.7"
+                               class="w-full"
+                               oninput="document.getElementById('temperatureValue').textContent = this.value">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1">Max Tokens</label>
+                        <input type="number" 
+                               id="maxTokens"
+                               min="1" max="4000" value="1000"
+                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 运行测试按钮 -->
+            <div class="px-6 py-4">
+                <button id="runTestBtn"
+                        class="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                        onclick="runTest()">
+                    <i class="fas fa-play mr-2"></i>
+                    运行测试
+                </button>
+            </div>
+
+            <!-- 测试结果区域 -->
+            <div class="flex-1 overflow-hidden flex flex-col">
+                <!-- Tab切换 -->
+                <div class="px-6 border-b border-gray-200">
+                    <div class="flex space-x-6">
+                        <button class="py-3 border-b-2 border-blue-600 text-blue-600 font-medium"
+                                onclick="switchTab('output')">
+                            输出结果
+                        </button>
+                        <button class="py-3 border-b-2 border-transparent text-gray-600 hover:text-gray-900"
+                                onclick="switchTab('history')">
+                            测试历史
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab内容 -->
+                <div class="flex-1 overflow-y-auto">
+                    <!-- 输出结果Tab -->
+                    <div id="outputTab" class="p-6">
+                        <div id="testResult" class="text-gray-500">
+                            <p>点击"运行测试"查看结果</p>
+                        </div>
+                    </div>
+
+                    <!-- 测试历史Tab -->
+                    <div id="historyTab" class="p-6 hidden">
+                        <div id="testHistory" class="space-y-4">
+                            <!-- 历史记录将动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 加载提示 -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span>处理中...</span>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/prompt_editor.js') }}"></script>
+    <script>
+        // 初始化数据
+        const promptData = {{ prompt|tojson if prompt else 'null' }};
+        const isNewPrompt = {{ 'true' if is_new else 'false' }};
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initPromptEditor(promptData, isNewPrompt);
+        });
+    </script>
+</body>
+</html>

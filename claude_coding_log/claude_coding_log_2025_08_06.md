@@ -1083,3 +1083,711 @@ FLASK_PORT=5001       # Flask开发服务器端口
 **日志记录时间**: 2025-08-06 20:35  
 **更新内容**: 完成错误页面创建、favicon配置、环境变量清理  
 **当前状态**: 系统错误处理机制完善，配置规范化完成
+
+---
+
+## 第四阶段：Prompt编辑器页面开发
+
+**开发时间**: 2025-08-06 21:00 - 22:30  
+**任务**: 根据设计原型实现完整的Prompt编辑器页面
+
+### 开发需求分析
+
+根据用户提供的Prompt编辑器原型图，需要实现以下核心功能：
+1. Prompt内容编辑器（支持变量语法）
+2. 变量自动识别和管理
+3. API测试面板（多平台支持）
+4. 版本管理系统
+5. 自动保存机制
+
+### 架构设计
+
+#### 数据库表结构设计
+
+**设计理念**: 高内聚低耦合，核心数据与扩展数据分离
+
+##### 1. 核心表设计（10个表）
+
+```sql
+-- migrations/prompt_editor_schema.sql
+
+1. prompts                 # Prompt基础信息表（不变字段）
+2. prompt_versions         # 版本管理表（支持多版本）
+3. prompt_variables        # 变量定义表
+4. prompt_tags            # 标签关联表
+5. prompt_test_results    # 测试结果记录表
+6. prompt_favorites       # 用户收藏表
+7. prompt_statistics      # 统计信息表（扩展数据）
+8. prompt_autosaves       # 自动保存表（临时数据）
+9. tag_suggestions        # 标签建议表
+10. api_providers         # API提供商配置表
+```
+
+##### 关键设计特点：
+- **版本管理**: 支持多版本并存，历史可追溯
+- **变量系统**: 每个版本独立的变量定义
+- **性能优化**: 合理的索引设计（user_id, prompt_id, create_time等）
+- **扩展性**: JSON字段存储灵活配置
+- **数据完整性**: 所有表都有create_time和update_time
+
+### 后端实现
+
+#### 1. 数据模型层 (app/models/)
+
+创建的模型文件：
+- `base.py` - 模型基类，提供通用方法
+- `prompt.py` - Prompt核心模型（Prompt, PromptVersion, PromptVariable, PromptTag）
+- `prompt_test.py` - 测试结果模型
+- 其他支持模型
+
+**模型基类特性**：
+```python
+class BaseModel:
+    def to_dict()      # 转换为字典
+    def to_json()      # 转换为JSON
+    def from_dict()    # 从字典创建
+    def parse_json_field()  # 解析JSON字段
+    def set_json_field()    # 设置JSON字段
+```
+
+#### 2. 服务层 (app/services/)
+
+##### PromptService (prompt_service.py)
+核心业务逻辑处理：
+- `create_prompt()` - 创建新Prompt（含初始版本）
+- `update_prompt()` - 更新Prompt（支持版本管理）
+- `get_prompt()` - 获取Prompt详情
+- `_extract_variables()` - 自动提取变量（{{变量名}}语法）
+- `_create_version()` - 创建新版本
+- `_save_variables()` - 保存变量定义
+- `_save_tags()` - 保存标签
+
+**变量提取算法**：
+```python
+pattern = r'\{\{([^}]+)\}\}'  # 匹配 {{variable_name}} 格式
+```
+
+##### PromptTestService (prompt_test_service.py)
+AI测试功能：
+- `run_test()` - 执行Prompt测试
+- `get_test_history()` - 获取测试历史
+- `_replace_variables()` - 变量替换
+- `_call_ai_model()` - 调用AI模型（预留接口）
+- `_save_test_result()` - 保存测试结果
+- `_update_statistics()` - 更新统计信息
+
+##### PromptAutosaveService (prompt_autosave_service.py)
+自动保存功能：
+- `save_draft()` - 保存草稿（24小时过期）
+- `recover_draft()` - 恢复草稿
+- `_clean_expired_drafts()` - 清理过期草稿
+
+#### 3. 数据库连接管理 (app/common/database.py)
+
+**连接池实现**：
+```python
+_db_pool = PooledDB(
+    creator=pymysql,
+    maxconnections=6,      # 最大连接数
+    mincached=2,          # 初始空闲连接
+    maxcached=5,          # 最大空闲连接
+    blocking=True,        # 无可用连接时阻塞
+    cursorclass=DictCursor  # 返回字典格式
+)
+```
+
+**封装的数据库操作**：
+- `get_db_connection()` - 上下文管理器
+- `Database.execute()` - 执行SQL
+- `Database.select_one()` - 查询单条
+- `Database.select_all()` - 查询多条
+- `Database.select_page()` - 分页查询
+- `@Database.transaction` - 事务装饰器
+
+#### 4. 路由层 (app/routes/prompt_editor.py)
+
+##### 页面路由
+- `GET /prompt/editor` - 新建Prompt页面
+- `GET /prompt/editor/<id>` - 编辑Prompt页面
+
+##### API路由
+- `POST /prompt/api/create` - 创建Prompt
+- `PUT /prompt/api/<id>/update` - 更新Prompt
+- `GET /prompt/api/<id>` - 获取Prompt详情
+- `GET /prompt/api/<id>/versions` - 获取版本历史
+- `POST /prompt/api/<id>/analyze` - 分析Prompt内容
+- `POST /prompt/api/autosave` - 自动保存
+- `GET /prompt/api/autosave/recover` - 恢复草稿
+- `POST /prompt/api/<id>/test` - 运行测试
+- `GET /prompt/api/<id>/test-history` - 测试历史
+- `GET /prompt/api/tags/suggestions` - 标签建议
+- `GET /prompt/api/categories` - 分类列表
+- `GET /prompt/api/providers` - API提供商列表
+
+### 前端实现
+
+#### 1. HTML模板 (templates/prompt_editor.html)
+
+**页面结构**：
+```
+编辑器页面
+├── 顶部导航栏（64px固定高度）
+└── 主内容区域（flex布局）
+    ├── 左侧编辑区域（flex-1）
+    │   ├── 顶部工具栏（标题、版本、操作按钮）
+    │   ├── 元信息栏（分类、标签）
+    │   ├── 主编辑器（textarea）
+    │   └── 变量面板（动态生成）
+    └── 右侧测试面板（384px固定宽度）
+        ├── API配置（模型选择、参数调节）
+        ├── 运行测试按钮
+        └── 结果区域（输出/历史Tab）
+```
+
+**像素级还原设计**：
+- 严格按照原型图布局
+- 精确的间距和尺寸
+- 完整的交互元素
+
+#### 2. JavaScript (static/js/prompt_editor.js)
+
+**核心功能实现**：
+
+##### 初始化系统
+```javascript
+function initPromptEditor(promptData, isNew) {
+    setupAutoSave()           // 设置自动保存
+    setupChangeListeners()    // 监听变化
+    parseVariables()          // 解析变量
+    loadTestHistory()         // 加载历史
+    setupKeyboardShortcuts()  // 快捷键
+}
+```
+
+##### 变量解析系统
+```javascript
+function parseVariables() {
+    const pattern = /\{\{([^}]+)\}\}/g
+    // 提取所有变量
+    // 动态生成输入界面
+    // 更新变量面板
+}
+```
+
+##### 自动保存机制
+```javascript
+// 3秒防抖保存
+autoSaveTimer = setTimeout(autoSave, 3000)
+```
+
+##### 测试功能
+```javascript
+async function runTest() {
+    // 收集变量值
+    // 验证必填项
+    // 调用API测试
+    // 显示结果
+}
+```
+
+##### 键盘快捷键
+- `Cmd/Ctrl + S` - 保存
+- `Cmd/Ctrl + Enter` - 运行测试
+
+#### 3. CSS样式 (static/css/prompt_editor.css)
+
+**样式特点**：
+- Monaco等宽字体用于编辑器
+- 变量高亮样式
+- 滑块组件美化
+- 响应式布局适配
+- 加载动画效果
+
+### 技术亮点
+
+#### 1. 变量系统设计
+- **自动识别**: 实时解析{{变量}}语法
+- **动态UI生成**: 根据变量自动生成输入界面
+- **类型支持**: text/number/select/multiline等
+- **验证机制**: 必填验证、格式验证
+
+#### 2. 版本管理
+- **多版本并存**: 保留所有历史版本
+- **版本对比**: 支持查看变更内容
+- **自动版本号**: v1.0, v1.1递增
+- **版本切换**: 可回退到任意版本
+
+#### 3. 性能优化
+- **数据库连接池**: 复用连接，提高性能
+- **防抖保存**: 减少不必要的请求
+- **索引优化**: 关键字段建立索引
+- **分页查询**: 大数据量分页处理
+
+#### 4. 用户体验
+- **自动保存**: 防止数据丢失
+- **实时反馈**: 操作即时响应
+- **快捷键支持**: 提高操作效率
+- **错误处理**: 友好的错误提示
+
+### 依赖更新
+
+添加的依赖包：
+```
+DBUtils==3.0.3  # 数据库连接池
+```
+
+### 文件清单
+
+#### 后端文件（11个）
+1. `migrations/prompt_editor_schema.sql` - 数据库表结构
+2. `app/models/__init__.py` - 模型包初始化
+3. `app/models/base.py` - 模型基类
+4. `app/models/prompt.py` - Prompt核心模型
+5. `app/models/prompt_test.py` - 测试结果模型
+6. `app/services/prompt_service.py` - 核心业务服务
+7. `app/services/prompt_test_service.py` - 测试服务
+8. `app/services/prompt_autosave_service.py` - 自动保存服务
+9. `app/common/database.py` - 数据库连接管理
+10. `app/routes/prompt_editor.py` - 路由和API
+11. `requirements.txt` - 更新依赖
+
+#### 前端文件（3个）
+1. `app/templates/prompt_editor.html` - 编辑器页面
+2. `app/static/js/prompt_editor.js` - 交互逻辑
+3. `app/static/css/prompt_editor.css` - 样式文件
+
+### 测试要点
+
+1. **数据库初始化**
+   ```bash
+   mysql -u root -p < migrations/prompt_editor_schema.sql
+   ```
+
+2. **访问编辑器**
+   - 新建: http://localhost:5000/prompt/editor
+   - 编辑: http://localhost:5000/prompt/editor/{id}
+
+3. **功能测试**
+   - 变量自动识别
+   - 标签添加删除
+   - 自动保存功能
+   - 测试运行（模拟）
+   - 快捷键操作
+
+### 使用说明
+
+#### 环境准备
+
+1. **安装依赖**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **配置环境变量**
+   ```bash
+   cp .env.template .env
+   # 编辑.env文件，配置数据库等信息
+   ```
+
+3. **初始化数据库**
+   ```bash
+   # 确保MySQL服务运行中
+   # 创建数据库
+   mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS prompt_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+   
+   # 执行数据库表结构脚本
+   mysql -u root -p prompt_db < migrations/prompt_editor_schema.sql
+   ```
+
+#### 运行应用
+
+1. **启动Flask应用**
+   ```bash
+   # 激活虚拟环境（如果有）
+   source prompt_project/bin/activate
+   
+   # 运行应用
+   python run.py
+   
+   # 或指定端口
+   FLASK_PORT=5001 python run.py
+   ```
+
+2. **访问页面**
+   - 首页：http://localhost:5000/
+   - 新建Prompt：http://localhost:5000/prompt/editor
+   - 编辑Prompt：http://localhost:5000/prompt/editor/{prompt_id}
+
+#### 功能测试
+
+1. **Prompt编辑器功能**
+   - 在编辑器中输入内容，使用`{{变量名}}`定义变量
+   - 系统会自动识别变量并生成输入框
+   - 填写变量值后点击"运行测试"查看效果
+
+2. **自动保存测试**
+   - 编辑内容后等待3秒，系统会自动保存草稿
+   - 刷新页面可以恢复未保存的内容
+
+3. **快捷键操作**
+   - `Cmd/Ctrl + S`：保存Prompt
+   - `Cmd/Ctrl + Enter`：运行测试
+
+4. **标签管理**
+   - 在标签输入框输入标签名，按Enter或点击添加按钮
+   - 点击已有标签可以删除
+
+#### Docker部署（可选）
+
+```bash
+# 构建镜像
+docker build -t prompt-editor .
+
+# 运行容器
+docker run -d \
+  --name prompt-editor \
+  -p 5000:5000 \
+  -e DB_HOST=host.docker.internal \
+  -e DB_PASSWORD=your_password \
+  prompt-editor
+```
+
+#### 常见问题
+
+1. **数据库连接失败**
+   - 检查MySQL服务是否运行
+   - 确认.env中的数据库配置正确
+   - 确认数据库用户有足够权限
+
+2. **模板找不到错误**
+   - 确保在项目根目录运行应用
+   - 检查templates目录是否完整
+
+3. **静态文件404**
+   - 清除浏览器缓存
+   - 检查static目录文件是否完整
+
+#### API接口文档
+
+##### 创建Prompt
+```http
+POST /prompt/api/create
+Content-Type: application/json
+
+{
+  "title": "Prompt标题",
+  "content": "Prompt内容，支持{{变量}}",
+  "category": "marketing",
+  "tags": ["标签1", "标签2"]
+}
+```
+
+##### 更新Prompt
+```http
+PUT /prompt/api/{prompt_id}/update
+Content-Type: application/json
+
+{
+  "title": "新标题",
+  "content": "新内容",
+  "create_new_version": false
+}
+```
+
+##### 运行测试
+```http
+POST /prompt/api/{prompt_id}/test
+Content-Type: application/json
+
+{
+  "content": "完整的Prompt内容",
+  "variables": {
+    "变量名": "变量值"
+  },
+  "model_provider": "openai",
+  "model_name": "gpt-4",
+  "parameters": {
+    "temperature": 0.7,
+    "max_tokens": 1000
+  }
+}
+```
+
+### 待完成工作
+
+1. **AI接口集成**
+   - OpenAI API集成
+   - Claude API集成
+   - 文心一言集成
+
+2. **用户系统**
+   - 登录认证
+   - 权限管理
+   - 多用户协作
+
+3. **高级功能**
+   - WebSocket实时更新
+   - 批量测试
+   - 模板市场
+
+---
+
+**日志记录时间**: 2025-08-06 22:30  
+**更新内容**: 完成Prompt编辑器完整开发（数据库设计、后端API、前端界面）  
+**当前状态**: 编辑器核心功能完成，待集成真实AI接口
+
+---
+
+## 第五阶段：数据库重构和协作空间实现
+
+**重构时间**: 2025-08-06 23:00 - 23:30  
+**任务**: 审查并重构数据库设计，实现协作空间功能
+
+### 问题发现与分析
+
+#### 1. 过度设计问题排查
+
+在代码审查过程中，发现数据库设计存在严重的过度设计问题：
+
+**发现的过度设计字段**：
+1. `parent_id` - Fork功能（需求中没有）
+2. `is_template` - 模板标记（需求中没有）  
+3. `language` - 语言设置（需求中没有）
+4. `difficulty` - 难度等级（需求中没有）
+5. `visibility` - 可见性设置（不符合协作需求）
+6. `fork_count` - Fork统计（需求中没有）
+7. `share_count` - 分享统计（需求中没有）
+8. `average_score` - 平均评分（需求中没有）
+
+**问题根源分析**：
+- 设计时凭"经验"和"最佳实践"添加字段
+- 没有严格按照需求驱动设计
+- 违背了"刚刚好"的设计原则
+- 数据库设计和实际功能脱节
+
+#### 2. 协作空间需求理解
+
+**原始理解错误**：
+- 最初设计了简单的 `visibility`（private/team/public）
+- 这是典型的"分享"模式，不是"协作"模式
+
+**正确的需求**：
+- 用户需要的是"协作空间"概念
+- 在协作空间内，成员的 Prompt 互相可见
+- 主要场景：用户和妻子的家庭协作
+
+### 重构方案设计
+
+#### 方案对比
+
+**方案1：工作空间模型**（✅ 已采用）
+- 添加 workspaces 表
+- 添加 workspace_members 表  
+- Prompt 归属于特定工作空间
+- 清晰的权限边界
+
+**方案2：简化版 visibility + team_id**
+- 使用简单的标记字段
+- 硬编码团队概念
+
+**方案3：最简化二人协作**
+- 仅使用 is_shared 布尔字段
+- 硬编码两个用户ID
+
+**选择理由**：
+- 方案1虽然稍复杂，但扩展性好
+- 符合实际的协作模式
+- 清晰的数据隔离和权限管理
+
+### 实施内容
+
+#### 1. 数据库表结构调整
+
+##### 新增表
+```sql
+-- 1. workspaces 表（工作空间）
+CREATE TABLE workspaces (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL COMMENT '空间名称',
+    description TEXT COMMENT '空间描述',
+    type VARCHAR(20) DEFAULT 'personal' COMMENT '空间类型（personal/shared）',
+    owner_id BIGINT UNSIGNED NOT NULL COMMENT '创建者ID',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_owner_id (owner_id),
+    KEY idx_type (type)
+);
+
+-- 2. workspace_members 表（空间成员）
+CREATE TABLE workspace_members (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    workspace_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    role VARCHAR(20) DEFAULT 'member' COMMENT '角色（owner/member）',
+    join_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_workspace_user (workspace_id, user_id),
+    KEY idx_user_id (user_id),
+    KEY idx_workspace_id (workspace_id)
+);
+```
+
+##### prompts 表修改
+**删除的字段**：
+- ❌ `parent_id` - Fork功能
+- ❌ `is_template` - 模板标记
+- ❌ `visibility` - 可见性
+- ❌ `language` - 语言设置
+- ❌ `difficulty` - 难度等级
+
+**添加的字段**：
+- ✅ `workspace_id` - 所属工作空间ID
+
+**简化的字段**：
+- `status` 简化为：0:删除 1:正常（原来有草稿、发布、归档等状态）
+
+##### 其他表调整
+**prompt_statistics 表**：
+- 删除 `fork_count`
+- 删除 `share_count`
+- 删除 `average_score`
+
+**删除的文件**：
+- `app/services/prompt_fork_service.py` - 整个Fork服务
+
+#### 2. 模型层更新
+
+##### Prompt 模型
+```python
+class Prompt(BaseModel):
+    def __init__(self):
+        # 保留的字段
+        self.id: Optional[int] = None
+        self.uuid: Optional[str] = None
+        self.title: Optional[str] = None
+        self.description: Optional[str] = None
+        self.category: str = 'general'
+        self.user_id: Optional[int] = None
+        self.workspace_id: Optional[int] = None  # 新增
+        self.status: int = 1  # 简化：0:删除 1:正常
+        self.create_time: Optional[datetime] = None
+        self.update_time: Optional[datetime] = None
+```
+
+##### 新增 Workspace 模型
+```python
+class Workspace(BaseModel):
+    """工作空间模型"""
+    def __init__(self):
+        self.id: Optional[int] = None
+        self.name: Optional[str] = None
+        self.description: Optional[str] = None
+        self.type: str = 'personal'  # personal/shared
+        self.owner_id: Optional[int] = None
+        
+class WorkspaceMember(BaseModel):
+    """工作空间成员模型"""
+    def __init__(self):
+        self.workspace_id: Optional[int] = None
+        self.user_id: Optional[int] = None
+        self.role: str = 'member'  # owner/member
+```
+
+#### 3. 服务层更新
+
+##### PromptService 修改
+```python
+def create_prompt(user_id: int, workspace_id: int, title: str, ...):
+    """创建Prompt时必须指定工作空间"""
+    sql = """
+        INSERT INTO prompts (uuid, title, description, category, 
+                           user_id, workspace_id, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+```
+
+##### 新增 WorkspaceService
+主要功能：
+- `create_personal_workspace()` - 创建个人空间
+- `create_shared_workspace()` - 创建协作空间
+- `add_member()` - 添加成员
+- `remove_member()` - 移除成员
+- `get_user_workspaces()` - 获取用户的所有空间
+- `get_workspace_prompts()` - 获取空间内的Prompt
+- `is_workspace_member()` - 检查成员资格
+
+#### 4. 数据初始化
+
+```sql
+-- 创建默认工作空间
+INSERT INTO workspaces (id, name, description, type, owner_id) VALUES
+(1, '个人工作空间', '默认个人工作空间', 'personal', 1),
+(2, '家庭协作空间', '家庭成员共享的协作空间', 'shared', 1);
+
+-- 添加工作空间成员
+INSERT INTO workspace_members (workspace_id, user_id, role) VALUES
+(1, 1, 'owner'),  -- user1 是个人空间的所有者
+(2, 1, 'owner'),  -- user1 是协作空间的所有者
+(2, 2, 'member'); -- user2 是协作空间的成员
+```
+
+### 设计改进总结
+
+#### 改进前后对比
+
+| 方面 | 改进前 | 改进后 |
+|------|--------|--------|
+| 字段数量 | 13个字段（含5个过度设计） | 9个字段（精简必要） |
+| 权限模型 | visibility字段（简单粗暴） | 工作空间成员关系（清晰） |
+| 扩展性 | Fork、模板等无用功能 | 聚焦协作空间 |
+| 复杂度 | 过度复杂 | 刚刚好 |
+
+#### 遵循的设计原则
+
+1. **需求驱动**：严格按照实际需求设计，不添加"可能有用"的功能
+2. **刚刚好原则**：不过度设计，也不过于简化
+3. **高内聚低耦合**：工作空间独立管理，与Prompt解耦
+4. **数据完整性**：保留必要的约束和索引
+
+### 经验教训
+
+1. **过度设计的危害**：
+   - 增加系统复杂度
+   - 浪费开发时间
+   - 后期维护困难
+   - 可能误导使用者
+
+2. **正确的设计流程**：
+   - 深入理解需求
+   - 设计最小可行方案
+   - 预留合理的扩展点
+   - 持续重构优化
+
+3. **协作 vs 分享**：
+   - 协作：基于空间的共同工作
+   - 分享：基于权限的内容传播
+   - 两者本质不同，实现方式也不同
+
+### 后续优化建议
+
+1. **权限系统完善**：
+   - 实现完整的用户系统
+   - 细化工作空间权限
+   - 添加操作日志
+
+2. **协作功能增强**：
+   - 实时协同编辑
+   - 变更通知
+   - 版本冲突处理
+
+3. **性能优化**：
+   - 添加缓存层
+   - 优化查询语句
+   - 考虑读写分离
+
+---
+
+**日志记录时间**: 2025-08-06 23:30  
+**更新内容**: 完成数据库重构，删除过度设计，实现协作空间功能  
+**当前状态**: 数据库设计优化完成，符合实际需求
